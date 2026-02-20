@@ -92,6 +92,51 @@ export async function middleware(request: NextRequest) {
         }
     }
 
+    // ─── /admin routes (CMS Dashboard) ───────────────────────────────────────
+    if (pathname.startsWith('/admin')) {
+        if (!user) {
+            return NextResponse.redirect(new URL('/login', request.url))
+        }
+
+        // Fetch profile if not already fetched
+        const { data: profile } = await supabase
+            .from('users')
+            .select('role, unit_id')
+            .eq('id', user.id)
+            .single()
+
+        const role = profile?.role as UserRole | undefined
+        const unitId = profile?.unit_id as string | undefined
+
+        // /admin/[unit_id]/** — unit_admin can only access their own unit
+        const adminMatch = pathname.match(/^\/admin\/([^/]+)/)
+        if (adminMatch) {
+            const requestedUnitId = adminMatch[1]
+            if (role === 'super_admin') {
+                // Super admin can access any unit
+            } else if (role === 'unit_admin') {
+                if (unitId !== requestedUnitId) {
+                    return NextResponse.redirect(
+                        new URL(unitId ? `/admin/${unitId}/dashboard` : '/', request.url)
+                    )
+                }
+            } else {
+                return NextResponse.redirect(new URL('/', request.url))
+            }
+        }
+
+        // /admin (root) redirect
+        if (pathname === '/admin' || pathname === '/admin/') {
+            if (role === 'super_admin') {
+                return NextResponse.redirect(new URL('/dashboard/super', request.url))
+            } else if (role === 'unit_admin' && unitId) {
+                return NextResponse.redirect(new URL(`/admin/${unitId}/dashboard`, request.url))
+            } else {
+                return NextResponse.redirect(new URL('/', request.url))
+            }
+        }
+    }
+
     // 6. Redirect already-logged-in users away from /login
     if (pathname === '/login' && user) {
         const { data: profile } = await supabase
