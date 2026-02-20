@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { convertGDriveUrl } from '@/lib/gdrive'
 
 // ─── Create Post ─────────────────────────────────────────────────────────────
 export async function createPost(formData: FormData) {
@@ -12,18 +13,23 @@ export async function createPost(formData: FormData) {
     const unit_id = formData.get('unit_id') as string
     const title = formData.get('title') as string
     const content = formData.get('content') as string
+    const imageUrlInput = formData.get('image_url_input') as string | null
     const imageFile = formData.get('image') as File | null
 
     let image_url: string | null = null
 
-    if (imageFile && imageFile.size > 0) {
+    // ลำดับความสำคัญ: URL input > File upload
+    if (imageUrlInput && imageUrlInput.trim()) {
+        // แปลง Google Drive link เป็น direct image URL
+        image_url = convertGDriveUrl(imageUrlInput.trim())
+    } else if (imageFile && imageFile.size > 0) {
         const ext = imageFile.name.split('.').pop()
         const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
         const { error: uploadError } = await supabase.storage
             .from('post_images')
             .upload(fileName, imageFile)
 
-        if (uploadError) return { error: 'Image upload failed: ' + uploadError.message }
+        if (uploadError) return { error: 'อัปโหลดรูปภาพไม่สำเร็จ: ' + uploadError.message }
 
         image_url = supabase.storage.from('post_images').getPublicUrl(fileName).data.publicUrl
     }
@@ -31,7 +37,8 @@ export async function createPost(formData: FormData) {
     const { error } = await supabase.from('posts').insert({ unit_id, title, content, image_url })
     if (error) return { error: error.message }
 
-    revalidatePath(`/admin/${unit_id}/dashboard`)
+    revalidatePath(`/dashboard/unit/${unit_id}`)
+    revalidatePath('/')
     return { success: true }
 }
 
@@ -46,18 +53,22 @@ export async function updatePost(formData: FormData) {
     const title = formData.get('title') as string
     const content = formData.get('content') as string
     const currentImageUrl = formData.get('current_image_url') as string | null
+    const imageUrlInput = formData.get('image_url_input') as string | null
     const imageFile = formData.get('image') as File | null
 
     let image_url = currentImageUrl || null
 
-    if (imageFile && imageFile.size > 0) {
+    // ลำดับความสำคัญ: URL input > File upload > เดิม
+    if (imageUrlInput && imageUrlInput.trim()) {
+        image_url = convertGDriveUrl(imageUrlInput.trim())
+    } else if (imageFile && imageFile.size > 0) {
         const ext = imageFile.name.split('.').pop()
         const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
         const { error: uploadError } = await supabase.storage
             .from('post_images')
             .upload(fileName, imageFile)
 
-        if (uploadError) return { error: 'Image upload failed: ' + uploadError.message }
+        if (uploadError) return { error: 'อัปโหลดรูปภาพไม่สำเร็จ: ' + uploadError.message }
 
         image_url = supabase.storage.from('post_images').getPublicUrl(fileName).data.publicUrl
     }
@@ -69,7 +80,8 @@ export async function updatePost(formData: FormData) {
 
     if (error) return { error: error.message }
 
-    revalidatePath(`/admin/${unit_id}/dashboard`)
+    revalidatePath(`/dashboard/unit/${unit_id}`)
+    revalidatePath('/')
     return { success: true }
 }
 
@@ -85,6 +97,7 @@ export async function deletePost(formData: FormData) {
     const { error } = await supabase.from('posts').delete().eq('id', id)
     if (error) return { error: error.message }
 
-    revalidatePath(`/admin/${unit_id}/dashboard`)
+    revalidatePath(`/dashboard/unit/${unit_id}`)
+    revalidatePath('/')
     return { success: true }
 }
