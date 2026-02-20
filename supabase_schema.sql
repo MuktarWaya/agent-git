@@ -1,6 +1,3 @@
--- Enable Row Level Security (RLS)
-alter table auth.users enable row level security;
-
 -- Create units table
 create table units (
   id uuid primary key default gen_random_uuid(),
