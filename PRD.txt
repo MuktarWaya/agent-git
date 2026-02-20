@@ -1,0 +1,36 @@
+Project Name: Centralized Organization Web App (ระบบศูนย์รวมรายงานการดำเนินงาน 13 หน่วยงาน)
+Objective: สร้าง Web Application ที่เป็นศูนย์กลางในการแสดงผลและจัดการรายงานการดำเนินงานของหน่วยงานย่อยทั้ง 13 แห่ง (เช่น รพ.สต.) โดยให้แต่ละหน่วยงานมี Admin เป็นของตนเอง สามารถล็อกอินเข้ามาโพสต์ อัปเดต หรือลบข้อมูลของหน่วยงานตนเองได้แบบเรียลไทม์ (คล้าย Facebook Page) โดยไม่ต้องรอให้ Super Admin ทำการ Deploy โค้ดใหม่
+
+1. Tech Stack Recommendation (AI สามารถแนะนำเพิ่มเติมได้):
+
+Frontend: Next.js (App Router), React, Tailwind CSS
+
+Backend & Database: Supabase (สำหรับ Database, Authentication, และ Storage จัดการรูปภาพ)
+
+Deployment: Vercel
+
+2. User Roles (ระบบสิทธิ์ผู้ใช้งาน):
+
+Public User (บุคคลทั่วไป): เข้าชมเว็บไซต์หลัก ดูรายงานผลการดำเนินงานของทุกหน่วยงาน และสามารถฟิลเตอร์ดูเฉพาะหน่วยงานที่สนใจได้
+
+Unit Admin (แอดมินหน่วยงาน): มีทั้งหมด 13 บัญชี (ตามจำนวนหน่วยงาน) สามารถล็อกอินเข้ามาใน Dashboard เพื่อสร้าง แก้ไข ลบ โพสต์รายงานของหน่วยงานตัวเองได้เท่านั้น
+
+Super Admin (ผู้ดูแลระบบหลัก): จัดการเพิ่ม/ลด บัญชีผู้ใช้งานของ Unit Admin และแก้ไขข้อมูลพื้นฐานของทั้ง 13 หน่วยงานได้
+
+3. Core Features (ฟีเจอร์หลัก):
+
+Public Landing Page: หน้าหลักที่ดึงโพสต์ล่าสุดจากทั้ง 13 หน่วยงานมาแสดงรวมกันในรูปแบบ Grid หรือ Feed ที่สวยงามและรองรับมือถือ (Responsive)
+
+Unit Profile Page: หน้าโปรไฟล์ของแต่ละหน่วยงาน (ใช้ Dynamic Route เช่น /unit/[unit_id]) แสดงข้อมูลติดต่อและรวมโพสต์เฉพาะของหน่วยงานนั้นๆ
+
+Authentication System: ระบบล็อกอินที่ปลอดภัย หากล็อกอินสำเร็จให้ตรวจสอบสิทธิ์ (Role) และ Redirect ไปยัง Dashboard ของหน่วยงานตนเองอย่างถูกต้อง
+
+Admin Dashboard (CMS): หน้าจัดการหลังบ้าน ใช้ Dynamic Routing สำหรับฟอร์มสร้างโพสต์ รองรับการพิมพ์ข้อความและอัปโหลดรูปภาพประกอบรายงาน
+
+4. Initial Database Schema (โครงสร้างฐานข้อมูลเบื้องต้น):
+
+units table: เก็บข้อมูลหน่วยงาน (id, name, address, cover_image)
+
+users table: เก็บข้อมูลแอดมิน (id, role, unit_id อ้างอิงว่าสังกัดหน่วยงานไหน)
+
+posts table: เก็บข้อมูลรายงาน (id, unit_id, title, content, image_url, created_at)
