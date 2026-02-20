@@ -14,24 +14,12 @@ export async function createPost(formData: FormData) {
     const title = formData.get('title') as string
     const content = formData.get('content') as string
     const imageUrlInput = formData.get('image_url_input') as string | null
-    const imageFile = formData.get('image') as File | null
 
     let image_url: string | null = null
 
-    // ลำดับความสำคัญ: URL input > File upload
+    // แปลง Google Drive link เป็น direct image URL
     if (imageUrlInput && imageUrlInput.trim()) {
-        // แปลง Google Drive link เป็น direct image URL
         image_url = convertGDriveUrl(imageUrlInput.trim())
-    } else if (imageFile && imageFile.size > 0) {
-        const ext = imageFile.name.split('.').pop()
-        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-        const { error: uploadError } = await supabase.storage
-            .from('post_images')
-            .upload(fileName, imageFile)
-
-        if (uploadError) return { error: 'อัปโหลดรูปภาพไม่สำเร็จ: ' + uploadError.message }
-
-        image_url = supabase.storage.from('post_images').getPublicUrl(fileName).data.publicUrl
     }
 
     const { error } = await supabase.from('posts').insert({ unit_id, title, content, image_url })
@@ -54,23 +42,12 @@ export async function updatePost(formData: FormData) {
     const content = formData.get('content') as string
     const currentImageUrl = formData.get('current_image_url') as string | null
     const imageUrlInput = formData.get('image_url_input') as string | null
-    const imageFile = formData.get('image') as File | null
 
     let image_url = currentImageUrl || null
 
-    // ลำดับความสำคัญ: URL input > File upload > เดิม
+    // แปลง Google Drive link เป็น direct image URL (ถ้ามี URL ใหม่)
     if (imageUrlInput && imageUrlInput.trim()) {
         image_url = convertGDriveUrl(imageUrlInput.trim())
-    } else if (imageFile && imageFile.size > 0) {
-        const ext = imageFile.name.split('.').pop()
-        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-        const { error: uploadError } = await supabase.storage
-            .from('post_images')
-            .upload(fileName, imageFile)
-
-        if (uploadError) return { error: 'อัปโหลดรูปภาพไม่สำเร็จ: ' + uploadError.message }
-
-        image_url = supabase.storage.from('post_images').getPublicUrl(fileName).data.publicUrl
     }
 
     const { error } = await supabase
